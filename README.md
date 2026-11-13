@@ -7,6 +7,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>&nbsp;&nbsp;
   <img src="https://img.shields.io/badge/scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white" alt="scikit-learn"/>&nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/TensorFlow-FF6F00?style=flat-square&logo=tensorflow&logoColor=white" alt="TensorFlow"/>&nbsp;&nbsp;
   <img src="https://img.shields.io/badge/pandas-150458?style=flat-square&logo=pandas&logoColor=white" alt="pandas"/>&nbsp;&nbsp;
   <img src="https://img.shields.io/badge/Jupyter-F37626?style=flat-square&logo=jupyter&logoColor=white" alt="Jupyter"/>
 </p>
@@ -19,77 +20,87 @@
 
 | | |
 |---|---|
-| **What** | A classifier that predicts whether an NYC Airbnb listing is in the top price quartile |
-| **Target** | `high_price = 1` if the nightly price is in the top 25% of listings, otherwise `0` |
-| **Data** | ~28K NYC listings (`airbnbListingsData.csv.gz`) joined with census data (`censusData.csv`) |
-| **Model(s)** | TODO: for example, logistic regression, random forest, gradient boosting |
-| **Best result** | TODO: for example, ROC-AUC 0.xx, F1 0.xx (see [Results](#-results-and-key-findings)) |
+| **What** | A classifier that predicts whether an NYC Airbnb listing falls in the top price quartile |
+| **Target** | `price_category` (high-priced vs. low-priced), derived from the nightly listing price |
+| **Data** | ~28K NYC listings in `airbnbListingsData.csv.gz` |
+| **Models** | Logistic regression (tuned with grid search) and a two-hidden-layer neural network |
+| **Best result** | Neural network: **82.7% accuracy, 0.889 F1** (logistic regression: 74.2% accuracy, 0.851 F1). See [Results](#-results-and-key-findings). |
 
 ## 🔍 Project Overview
 
-TODO: 3–4 sentences. Explain the problem (hosts struggle to know whether their listing sits in a high or low price tier), what you built, and what you learned. Mention that the model describes how attributes relate to price tier and is not a pricing tool.
+Hosts often struggle to tell whether a listing sits in the high or low price tier. This project trains two classifiers on listing attributes such as capacity, bedrooms, bathrooms, room type, and host details, then compares an interpretable model (logistic regression) with a more flexible one (a neural network). The goal is to describe how a listing's attributes relate to its price tier. It is not a pricing tool, and the [ethical considerations](#️-ethical-considerations) below explain why predictions should not be used as the only input to a pricing decision.
 
 ## 🎯 Objectives and Goals
 
-1. Clean and prepare ~28K NYC Airbnb listings for modeling.
-2. Combine listing attributes with neighborhood-level census data.
-3. Train classifiers to separate high-priced from low-priced listings.
-4. Evaluate each model with appropriate metrics for an imbalanced (75/25) target.
-5. Identify which attributes matter most to the price tier.
+1. Explore and clean ~28K NYC Airbnb listings, including missing values and class imbalance.
+2. Prepare features for modeling without leaking the price into the inputs.
+3. Train and tune a logistic regression baseline.
+4. Train a neural network and compare it with the baseline.
+5. Identify which attributes matter most and discuss the ethical risks of the model.
 
 ## 🧪 Methodology
 
 ```mermaid
 flowchart LR
-    A[Airbnb listings<br/>CSV] --> C[Clean and merge]
-    B[Census data<br/>CSV] --> C
-    C --> D[Feature engineering]
-    D --> E[Train / test split]
-    E --> F[Train classifiers]
-    F --> G[Evaluate<br/>and compare]
+    A[Airbnb listings<br/>CSV] --> B[EDA]
+    B --> C[Drop and impute<br/>missing values]
+    C --> D[Remove price columns<br/>and free-text fields]
+    D --> E[One-hot encode<br/>categoricals]
+    E --> F[Stratified 90/10 split]
+    F --> G[Logistic regression<br/>+ grid search]
+    F --> H[Scale features<br/>+ neural network]
+    G --> I[Compare<br/>accuracy and F1]
+    H --> I
 ```
 
-1. **Cleaning:** TODO: for example, how you handled missing values, price formatting, and outliers.
-2. **Merging:** TODO: the key you used to join the census data (ZIP code, neighborhood, or tract).
-3. **Target:** the top quartile of price is labeled high-priced. TODO: state the price cutoff in dollars.
-4. **Features:** TODO: list the main feature groups, such as room type, neighborhood, number of reviews, availability, and census variables.
-5. **Models:** TODO: list the models and any tuning (for example cross-validation or grid search).
-6. **Evaluation:** TODO: the metrics you report (accuracy, precision, recall, F1, ROC-AUC, confusion matrix) and the test split ratio.
+1. **EDA:** class distribution, price boxplot, and listing counts by availability, room type, bedrooms, bathrooms, and superhost status. Correlations with the label guided feature selection.
+2. **Missing values:** `host_about`, `neighborhood_overview`, `host_response_rate`, and `host_acceptance_rate` were missing for roughly 9,000+ listings and only weakly correlated with the label, so they were dropped. `bedrooms`, `beds`, and `bathrooms` were filled with the median, and `host_location` with `"Unknown"`.
+3. **Leakage prevention:** `price` and the label columns were removed from the features, since the label is built from price. Free-text and unique-per-row fields (`host_name`, `amenities`, `name`, `description`) were also removed.
+4. **Encoding:** remaining categorical columns were one-hot encoded (`drop_first=True`).
+5. **Split:** 90% train / 10% test, stratified on the label, `random_state=1234`.
+6. **Class imbalance:** low-priced listings outnumber high-priced ones, so logistic regression uses `class_weight="balanced"`.
+7. **Logistic regression:** `GridSearchCV` with 5-fold cross-validation over `C` from 10⁻⁵ to 10⁴.
+8. **Neural network:** standardized inputs → Dense(64, ReLU) → Dense(32, ReLU) → Dense(1, sigmoid). Trained with SGD (learning rate 0.001) for 30 epochs, with a 20% validation split.
 
 ## 📊 Results and Key Findings
 
-TODO: replace the table with your real numbers.
-
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
-|---|---|---|---|---|---|
-| TODO | TODO | TODO | TODO | TODO | TODO |
+| Metric (held-out test set) | Logistic Regression | Neural Network |
+|---|---|---|
+| Accuracy | 74.2% | **82.7%** |
+| F1 score | 0.851 | **0.889** |
 
 **Key findings**
 
-- TODO: the strongest predictors of a high price tier.
-- TODO: where the model struggles (for example, borderline listings near the cutoff).
-- TODO: whether the census features added value over listing features alone.
+- **Capacity and size matter most.** `accommodates`, `bedrooms`, `beds`, and `bathrooms` showed the strongest correlation with the price category, so larger properties are more likely to be high-priced.
+- **No single feature is enough.** Most other numeric features were only weakly correlated with the label.
+- **The neural network outperformed the baseline** by about 8.6 percentage points of accuracy, which suggests it picked up non-linear patterns that logistic regression missed.
+- **The neural network started to overfit after about 15–20 epochs** (see the training curves in the notebook).
+- **Trade-off:** logistic regression is easier to explain to individual hosts through its coefficients, while the neural network predicts better but is harder to interpret.
 
 ## 🗃️ Dataset
 
 | File | Description |
 |---|---|
-| `data/airbnbListingsData.csv.gz` | ~28K NYC Airbnb listings. TODO: source and collection date |
-| `data/censusData.csv` | Census attributes by area. TODO: source and year |
+| `data/airbnbListingsData.csv.gz` | ~28K NYC Airbnb listings used for training. TODO: source and collection date |
+| `data/censusData.csv` | Census attributes by area. TODO: state whether and how this is used (see note in the repo owner's checklist) |
 
-**Column dictionary**
+**Key columns** (TODO: complete the dictionary from `df.columns`)
 
 | Column | Description |
 |---|---|
-| TODO | TODO |
+| `price_category` | Target label: high-priced or low-priced |
+| `price` | Nightly price (used to build the label, excluded from the features) |
+| `accommodates`, `bedrooms`, `beds`, `bathrooms` | Listing size and capacity |
+| `room_type` | Entire home, private room, and so on |
+| `availability_365` | Days available per year |
+| `host_is_superhost` | Whether the host is a superhost |
 | TODO | TODO |
 
-The listings file is compressed, and pandas reads it directly:
+pandas reads the compressed file directly:
 
 ```python
 import pandas as pd
-listings = pd.read_csv("data/airbnbListingsData.csv.gz")
-census = pd.read_csv("data/censusData.csv")
+df = pd.read_csv("data/airbnbListingsData.csv.gz")
 ```
 
 ## 🚀 Installation and Setup
@@ -111,40 +122,30 @@ source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Train the model
+`requirements.txt` should include `pandas`, `numpy`, `matplotlib`, `seaborn`, `scikit-learn`, `tensorflow`, and `notebook`.
+
+### 2. Train the models
 
 ```bash
-# TODO: pick one that matches your project
-jupyter notebook notebooks/TODO-training.ipynb
-# or
-python src/train.py
+jupyter notebook notebooks/TODO-notebook-name.ipynb
 ```
 
-TODO: say where the trained model is saved, if it is.
+Run all cells from top to bottom. The notebook trains the logistic regression (including the grid search, which can take a few minutes) and then the neural network (30 epochs).
 
 ### 3. Evaluate model performance
 
-```bash
-# TODO: pick one that matches your project
-jupyter notebook notebooks/TODO-evaluation.ipynb
-# or
-python src/evaluate.py
-```
-
-The evaluation prints the metrics table and draws the confusion matrix and ROC curve.
+The last cells of the same notebook predict on the held-out test set and print accuracy and F1 for both models, followed by a side-by-side comparison table. The training and validation loss and accuracy curves appear after the neural network cell.
 
 ### Run in Colab
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/NehaM2025/airbnb-price-category-predictor/blob/main/notebooks/TODO.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/NehaM2025/airbnb-price-category-predictor/blob/main/notebooks/TODO-notebook-name.ipynb)
 
-## 📚 Documentation
+## ⚖️ Ethical Considerations
 
-| Document | What it covers |
-|---|---|
-| This README | User guide: setup, training, evaluation, and results |
-| [API Reference](docs/API_Reference.md) | Functions and modules: inputs, outputs, and examples |
-| [Notebooks](notebooks/) | Annotated walkthroughs of cleaning, training, and evaluation |
-| [Data dictionary](#-dataset) | Column definitions for both datasets |
+- **Limited scope.** The data covers NYC listings from one platform at one point in time, so results do not generalize to other cities or to today's market.
+- **Proxy features.** Neighborhood and location features can act as proxies for income, socioeconomic status, or race, and the model can reinforce existing pricing patterns.
+- **Harm to hosts.** A wrong prediction can lead a host to under- or overprice a listing, which costs bookings or revenue. Less experienced hosts may rely on the model more heavily.
+- **Recommendation.** Use the predictions as one input among several, not as the final pricing decision.
 
 ## 🗂️ Repository Structure
 
@@ -155,30 +156,15 @@ airbnb-price-category-predictor/
 ├── data/
 │   ├── airbnbListingsData.csv.gz
 │   └── censusData.csv
-├── notebooks/                    # renamed from "Predictor Model"
-│   └── TODO.ipynb
-├── src/                          # optional: reusable functions
-│   └── TODO.py
+├── notebooks/
+│   └── TODO-notebook-name.ipynb
 └── docs/
     └── API_Reference.md
 ```
 
-## ⚠️ Limitations
-
-- The target is relative (top quartile), so the dollar cutoff depends on this dataset's date.
-- TODO: other limits, such as missing features, a single city, and a single time period.
-- The model shows association, not causation: it does not say that changing an attribute will change the price.
-
 ## 🔭 Potential Next Steps
 
-- TODO: for example, try regression on the exact price, add text features from listing descriptions, or test on a different city.
-
-## 🙋 Individual Contributions
-
-TODO: if this is a team project, list who did what. If it is solo work, replace this with a short "About the author" line.
-
-## 📄 License
-
-TODO: for example, MIT. Add a `LICENSE` file to match.
-
----
+- **Tune the neural network:** grid-search depth, neurons per layer, learning rate, and optimizer instead of a single configuration.
+- **Early stopping:** stop training once validation loss stops improving, to reduce the overfitting seen after 15–20 epochs.
+- **Feature engineering:** prune weak or noisy one-hot features, scale skewed numeric features, and analyze feature importance.
+- **Richer evaluation:** report precision, recall, and a confusion matrix for both classes, not only accuracy and F1.
