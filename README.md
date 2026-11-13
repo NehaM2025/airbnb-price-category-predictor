@@ -151,18 +151,6 @@ The notebook loads the data from GitHub automatically when it is not found local
 - **Harm to hosts.** A wrong prediction can lead a host to under- or overprice a listing, which costs bookings or revenue. Less experienced hosts may rely on the model more heavily.
 - **Recommendation.** Use the predictions as one input among several, not as the final pricing decision.
 
-## 🗂️ Repository Structure
-
-```
-airbnb-price-category-predictor/
-├── README.md
-├── requirements.txt
-├── data/
-│   └── airbnbListingsData.csv.gz
-└── notebooks/
-    └── airbnb_price_classifier.ipynb
-```
-
 ## 🔭 Potential Next Steps
 
 - **Standardize inputs for logistic regression** so both models are compared on equal terms and the coefficients are comparable.
