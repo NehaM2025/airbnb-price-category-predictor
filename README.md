@@ -24,7 +24,7 @@
 | **Target** | `price_category`: `high` (priced $180 or more) or `low` (priced $179 or less) |
 | **Data** | 28,022 NYC listings in `data/airbnbListingsData.csv.gz` |
 | **Models** | Logistic regression (tuned with grid search) and a two-hidden-layer neural network |
-| **Notebook** | [`notebooks/airbnb_price_classifier.ipynb`](notebooks/airbnb_price_classifier.ipynb) runs the full pipeline |
+| **Notebook** | [`notebooks/airbnb_price_classifier.ipynb`](https://github.com/NehaM2025/airbnb-price-category-predictor/blob/main/airbnb_price_classifier.ipynb) runs the full pipeline |
 
 ## 🔍 Project Overview
 
@@ -140,7 +140,7 @@ The notebook evaluates both models on the held-out 10% test set. After each mode
 
 ### Run in Colab
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/NehaM2025/airbnb-price-category-predictor/blob/main/notebooks/airbnb_price_classifier.ipynb)
+[![Open in Colab](https://github.com/NehaM2025/airbnb-price-category-predictor/blob/main/airbnb_price_classifier.ipynb)
 
 The notebook loads the data from GitHub automatically when it is not found locally.
 
@@ -150,13 +150,6 @@ The notebook loads the data from GitHub automatically when it is not found local
 - **Proxy features.** Neighborhood and location features can act as proxies for income, socioeconomic status, or race, and the model can reinforce existing pricing patterns.
 - **Harm to hosts.** A wrong prediction can lead a host to under- or overprice a listing, which costs bookings or revenue. Less experienced hosts may rely on the model more heavily.
 - **Recommendation.** Use the predictions as one input among several, not as the final pricing decision.
-
-## 📚 Documentation
-
-| Document | What it covers |
-|---|---|
-| This README | User guide: setup, training, evaluation, dataset, and ethics |
-| [Notebook](notebooks/airbnb_price_classifier.ipynb) | Annotated walkthrough of EDA, preprocessing, modeling, evaluation, and discussion |
 
 ## 🗂️ Repository Structure
 
